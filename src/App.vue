@@ -1,28 +1,32 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <HelloWorld/>
+    <el-container>
+      <el-header>
+        <Header/>
+      </el-header>
+      <el-main>
+        <Editor/>
+      </el-main>
+    </el-container>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import Header from './layout/Header'
+import Editor from './layout/Editor'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    Header,
+    Editor
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+.el-header {
+  box-shadow: 0px 1px 5px #dddddd;
+  padding: 10px 20px;
 }
 </style>
