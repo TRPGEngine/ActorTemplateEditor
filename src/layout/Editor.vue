@@ -12,7 +12,7 @@
         node-key="id"
         default-expand-all
         :expand-on-click-node="false"
-        @node-click="handleClick"
+        @node-click="handleNodeClick"
         draggable
         :allow-drop="allowDrop">
         <span class="template-node" slot-scope="{ node, data }">
@@ -21,7 +21,17 @@
             <i class="iconfont" v-else>&#xe6e9;</i>
             <span>{{data.info.name}}</span>
           </span>
-          <el-button class="template-node-action" type="text" size="mini" @click="(e) => removeNode(e, node, data)">删除</el-button>
+          <el-popover
+            placement="right"
+            width="200"
+            v-model="templateNodePopover[data.id]">
+            <p v-if="data.isGroup">确定移除组[{{data.info.name}}]么?该组下面所有属性都会被删除</p>
+            <p v-else>确定移除属性[{{data.info.name}}]么?</p>
+            <div style="text-align: right; margin: 0">
+              <el-button type="primary" size="mini" @click="(e) => removeNode(node, data)">确定</el-button>
+            </div>
+            <el-button slot="reference" class="template-node-action" size="mini" type="text" @click="(e) => handleShowRemoveNodeConfirm(e, data.id)">删除</el-button>
+          </el-popover>
         </span>
       </el-tree>
     </el-col>
@@ -137,6 +147,7 @@ export default {
           { required: true, message: '请输入模板作者', trigger: 'blur' }
         ]
       },
+      templateNodePopover: [],
       exportString: '',
       list: [],
       autoIncrement: 1,
@@ -157,12 +168,16 @@ export default {
       })
       this.autoIncrement++
     },
-    removeNode (e, node, data) {
-      e.stopPropagation()
-      const parent = node.parent;
-      const children = parent.data.children || parent.data;
-      const index = children.findIndex(d => d.id === data.id);
-      children.splice(index, 1);
+    removeNode (node, data) {
+      const parent = node.parent
+      const children = parent.data.children || parent.data
+      const index = children.findIndex(d => d.id === data.id)
+      children.splice(index, 1)
+
+      // 检测正在编辑节点的信息, 并销毁
+      if (this.editingNodeData && data.id === this.editingNodeData.id) {
+        this.editingNodeData = null
+      }
     },
     addGroup () {
       this.list.push({
@@ -173,7 +188,12 @@ export default {
       })
       this.autoIncrement++
     },
-    handleClick (data, node, ev) {
+    handleShowRemoveNodeConfirm (e, id) {
+      e.stopPropagation()
+      this.templateNodePopover.fill(false)
+      this.templateNodePopover[id] = true
+    },
+    handleNodeClick (data, node, ev) {
       console.log('点击了节点')
       this.editingNodeData = data
     },
