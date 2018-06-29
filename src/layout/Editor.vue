@@ -5,6 +5,7 @@
       <div class="editor-tree-action">
         <el-button type="primary" @click="addNode">增加属性</el-button>
         <el-button type="primary" @click="addGroup">增加组</el-button>
+        <el-button type="primary" @click="showExportDialog">导出模板</el-button>
       </div>
       <el-tree
         :data="list"
@@ -15,18 +16,21 @@
         draggable
         :allow-drop="allowDrop">
         <span class="template-node" slot-scope="{ node, data }">
-          <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
-          <i class="iconfont" v-else>&#xe6e9;</i>
-          <span>{{data.info.name}}</span>
+          <span>
+            <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
+            <i class="iconfont" v-else>&#xe6e9;</i>
+            <span>{{data.info.name}}</span>
+          </span>
+          <el-button class="template-node-action" type="text" size="mini" @click="(e) => removeNode(e, node, data)">删除</el-button>
         </span>
       </el-tree>
     </el-col>
     <!-- 右面板 -->
     <el-col :span="12">
-      <el-form ref="form" :model="editingNodeData" label-width="80px" v-if="editingNodeData">
+      <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData">
         <template v-if="editingNodeData.isGroup">
           <!-- 组 -->
-          <el-form-item label="组名称">
+          <el-form-item label="组名称:">
             <el-input v-model="editingNodeData.info.name"></el-input>
           </el-form-item>
           <el-form-item label="组描述:">
@@ -74,7 +78,7 @@
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值' : '表达式'">
+          <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值:' : '表达式:'">
             <el-input v-model="editingNodeData.info.default"></el-input>
           </el-form-item>
           <el-form-item label="值:">
@@ -86,6 +90,35 @@
         请选择您要修改的节点
       </div>
     </el-col>
+
+    <!-- 对话框 -->
+    <el-dialog title="导出模板" :visible.sync="dialogShow">
+      <el-form :model="templateInfo" label-width="100px" ref="dialogForm" :rules="dialogRules">
+        <el-form-item label="模板名称:" prop="name">
+          <el-input v-model="templateInfo.name"></el-input>
+        </el-form-item>
+        <el-form-item label="作者:" prop="creator">
+          <el-input v-model="templateInfo.creator"></el-input>
+        </el-form-item>
+        <el-form-item label="模板描述:">
+          <el-input
+            type="textarea"
+            :autosize="{ minRows: 4, maxRows: 6}"
+            placeholder="请输入模板描述信息"
+            v-model="templateInfo.desc">
+          </el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="generateTemplateStr">生成模板信息</el-button>
+        </el-form-item>
+      </el-form>
+      <el-input
+        type="textarea"
+        rows="10"
+        placeholder="导出信息"
+        v-model="exportString">
+      </el-input>
+    </el-dialog>
   </el-row>
 </template>
 
@@ -95,9 +128,24 @@ import at from 'trpg-actor-template'
 export default {
   data () {
     return {
+      dialogShow: false,
+      dialogRules: {
+        name: [
+          { required: true, message: '请输入模板名', trigger: 'blur' }
+        ],
+        creator: [
+          { required: true, message: '请输入模板作者', trigger: 'blur' }
+        ]
+      },
+      exportString: '',
       list: [],
       autoIncrement: 1,
-      editingNodeData: null
+      editingNodeData: null,
+      templateInfo: {
+        name: '',
+        creator: '',
+        desc: ''
+      }
     }
   },
   methods: {
@@ -108,6 +156,13 @@ export default {
         info: at.getInitCell('新属性' + this.autoIncrement)
       })
       this.autoIncrement++
+    },
+    removeNode (e, node, data) {
+      e.stopPropagation()
+      const parent = node.parent;
+      const children = parent.data.children || parent.data;
+      const index = children.findIndex(d => d.id === data.id);
+      children.splice(index, 1);
     },
     addGroup () {
       this.list.push({
@@ -124,6 +179,64 @@ export default {
     },
     allowDrop (draggingNode, dropNode, type) {
       return dropNode.data.isGroup || type !== 'inner' // 仅能拖拽到组里
+    },
+    showExportDialog () {
+      this.dialogShow = true
+    },
+    generateTemplateStr () {
+      this.$refs.dialogForm.validate(valid => {
+        if (!valid) {
+          return
+        }
+
+        const template = at.getInitTemplate()
+        template.name = this.templateInfo.name
+        template.creator = this.templateInfo.creator
+        template.desc = this.templateInfo.desc
+
+        for (const item of this.list) {
+          if (item.isGroup) {
+            let group = this.convertGroup(item.info, item.children)
+            template.insertGroup(group)
+          } else {
+            let cell = this.convertCell(item.info)
+            template.insertCell(cell)
+          }
+        }
+        console.log('导出的模板:', template)
+
+        this.exportString = at.stringify(template)
+      })
+    },
+    convertCell (cellItem) {
+      // 将编辑器的属性转化为模板的属性
+      const cell = at.getInitCell()
+      cell.visibility = cellItem.visibility
+      cell.name = cellItem.name
+      cell.desc = cellItem.desc
+      cell.default = cellItem.default
+      cell.func = cellItem.func
+      cell.type = cellItem.type
+      cell.value = cellItem.value
+      cell.ext = cellItem.ext
+
+      return cell
+    },
+    convertGroup (groupItem, childrenItem) {
+      // 将编辑器的组转化为模板的组
+      const group = at.getInitGroup()
+      group.name = groupItem.name
+      group.desc = groupItem.desc
+
+      for (const c of childrenItem) {
+        if (c.isGroup) {
+          group.insertGroup(this.convertGroup(c.info, c.children))
+        } else {
+          group.insertCell(this.convertCell(c.info))
+        }
+      }
+
+      return group
     }
   }
 }
@@ -143,6 +256,18 @@ export default {
 
   .template-node {
     padding: 0 4px;
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .template-node-action {
+      display: none;
+    }
+
+    &:hover .template-node-action {
+      display: inline;
+    }
   }
 
   .el-tree-node.is-drop-inner>.el-tree-node__content .template-node {
