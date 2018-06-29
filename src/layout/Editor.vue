@@ -14,6 +14,8 @@
         draggable
         :allow-drop="allowDrop">
         <span class="template-node" slot-scope="{ node, data }">
+          <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
+          <i class="iconfont" v-else>&#xe6e9;</i>
           <span>{{data.info.name}}</span>
         </span>
       </el-tree>
@@ -91,5 +93,15 @@ export default {
     margin-top: 120px;
     color: #999999;
   }
+
+  .template-node {
+    padding: 0 4px;
+  }
+
+  .el-tree-node.is-drop-inner>.el-tree-node__content .template-node {
+    background-color: #409eff;
+    color: white;
+  }
 }
+
 </style>
