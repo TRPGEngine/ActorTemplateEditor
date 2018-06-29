@@ -1,5 +1,6 @@
 <template>
   <el-row :gutter="20" class="editor-main">
+    <!-- 左面板 -->
     <el-col :span="12">
       <div class="editor-tree-action">
         <el-button type="primary" @click="addNode">增加属性</el-button>
@@ -20,6 +21,7 @@
         </span>
       </el-tree>
     </el-col>
+    <!-- 右面板 -->
     <el-col :span="12">
       <el-form ref="form" :model="editingNodeData" label-width="80px" v-if="editingNodeData">
         <template v-if="editingNodeData.isGroup">
@@ -27,11 +29,56 @@
           <el-form-item label="组名称">
             <el-input v-model="editingNodeData.info.name"></el-input>
           </el-form-item>
+          <el-form-item label="组描述:">
+            <el-input
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 6}"
+              placeholder="请输入组描述信息"
+              v-model="editingNodeData.info.desc">
+            </el-input>
+          </el-form-item>
         </template>
         <template v-else>
           <!-- 属性 -->
-          <el-form-item label="属性名称">
+          <el-form-item label="可见性:">
+            <el-checkbox v-model="editingNodeData.info.visibility">所有人可见</el-checkbox>
+          </el-form-item>
+          <el-form-item label="属性名称:">
             <el-input v-model="editingNodeData.info.name"></el-input>
+          </el-form-item>
+          <el-form-item label="属性描述:">
+            <el-input
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 6}"
+              placeholder="请输入属性描述信息"
+              v-model="editingNodeData.info.desc">
+            </el-input>
+          </el-form-item>
+          <el-form-item label="方法:">
+            <el-select v-model="editingNodeData.info.func" placeholder="请选择方法">
+              <el-option
+                v-for="item in ['value', 'expression', 'enum']"
+                :key="item"
+                :label="item"
+                :value="item">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="类型:">
+            <el-select v-model="editingNodeData.info.type" placeholder="请选择类型">
+              <el-option
+                v-for="item in ['string']"
+                :key="item"
+                :label="item"
+                :value="item">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值' : '表达式'">
+            <el-input v-model="editingNodeData.info.default"></el-input>
+          </el-form-item>
+          <el-form-item label="值:">
+            <el-input v-model="editingNodeData.info.value" :disabled="editingNodeData.info.func==='expression'"></el-input>
           </el-form-item>
         </template>
       </el-form>

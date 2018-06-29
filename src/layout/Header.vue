@@ -3,7 +3,7 @@
     <el-col :sm="12" :xs="24">
       <h1>TRPG进阶模板在线编辑器</h1>
     </el-col>
-    <el-col :sm="6" :offset="6" hidden-sm-and-down>
+    <el-col :sm="12" class="hidden-sm-and-down">
       <el-button type="text" @click="load">读取</el-button>
       <el-button type="text" @click="save">保存</el-button>
       <el-button type="text" @click="backToApp">返回应用</el-button>
