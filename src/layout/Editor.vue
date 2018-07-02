@@ -5,6 +5,7 @@
       <div class="editor-tree-action">
         <el-button type="primary" @click="addNode">增加属性</el-button>
         <el-button type="primary" @click="addGroup">增加组</el-button>
+        <el-button type="primary" @click="execTest">运算测试</el-button>
         <el-button type="primary" @click="showExportDialog">导出模板</el-button>
       </div>
       <el-tree
@@ -71,27 +72,27 @@
           <el-form-item label="方法:">
             <el-select v-model="editingNodeData.info.func" placeholder="请选择方法">
               <el-option
-                v-for="item in ['value', 'expression', 'enum']"
-                :key="item"
-                :label="item"
-                :value="item">
+                v-for="item in funcOptions"
+                :key="item.value"
+                :label="`${item.label}(${item.value})`"
+                :value="item.value">
               </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="类型:">
             <el-select v-model="editingNodeData.info.type" placeholder="请选择类型">
               <el-option
-                v-for="item in ['string']"
-                :key="item"
-                :label="item"
-                :value="item">
+                v-for="item in typeOptions"
+                :key="item.value"
+                :label="`${item.label}(${item.value})`"
+                :value="item.value">
               </el-option>
             </el-select>
           </el-form-item>
           <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值:' : '表达式:'">
             <el-input v-model="editingNodeData.info.default"></el-input>
           </el-form-item>
-          <el-form-item label="值:">
+          <el-form-item label="测试值:">
             <el-input v-model="editingNodeData.info.value" :disabled="editingNodeData.info.func==='expression'"></el-input>
           </el-form-item>
         </template>
@@ -147,6 +148,34 @@ export default {
           { required: true, message: '请输入模板作者', trigger: 'blur' }
         ]
       },
+      funcOptions: [
+        {
+          label: '值类型',
+          value: 'value'
+        },
+        {
+          label: '表达式',
+          value: 'expression'
+        },
+        {
+          label: '多选项',
+          value: 'enum'
+        }
+      ],
+      typeOptions: [
+        {
+          label: '文本',
+          value: 'text'
+        },
+        {
+          label: '多行文本',
+          value: 'mtext'
+        },
+        {
+          label: '数字',
+          value: 'number'
+        }
+      ],
       templateNodePopover: [],
       exportString: '',
       list: [],
@@ -209,24 +238,29 @@ export default {
           return
         }
 
-        const template = at.getInitTemplate()
-        template.name = this.templateInfo.name
-        template.creator = this.templateInfo.creator
-        template.desc = this.templateInfo.desc
-
-        for (const item of this.list) {
-          if (item.isGroup) {
-            let group = this.convertGroup(item.info, item.children)
-            template.insertGroup(group)
-          } else {
-            let cell = this.convertCell(item.info)
-            template.insertCell(cell)
-          }
-        }
+        const template = this.getTemplate(this.templateInfo.name, this.templateInfo.creator, this.templateInfo.desc)
         console.log('导出的模板:', template)
 
         this.exportString = at.stringify(template)
       })
+    },
+    getTemplate (name, creator, desc) {
+      const template = at.getInitTemplate()
+      template.name = name
+      template.creator = creator
+      template.desc = desc
+
+      for (const item of this.list) {
+        if (item.isGroup) {
+          let group = this.convertGroup(item.info, item.children)
+          template.insertGroup(group)
+        } else {
+          let cell = this.convertCell(item.info)
+          template.insertCell(cell)
+        }
+      }
+
+      return template
     },
     convertCell (cellItem) {
       // 将编辑器的属性转化为模板的属性
@@ -257,6 +291,29 @@ export default {
       }
 
       return group
+    },
+    execTest () {
+      const template = this.getTemplate()
+      template.eval()
+      const data = template.getData()
+      for (const item of this.list) {
+        if (!item.isGroup) {
+          item.info.value = data[item.info.name]
+        } else {
+          this.convertTemplateGroupValueToList(data, item)
+        }
+      }
+      //
+      this.$forceUpdate()
+    },
+    convertTemplateGroupValueToList (data, item) {
+      for (const sub of item.children) {
+        if (!sub.isGroup) {
+          sub.info.value = data[sub.info.name]
+        } else {
+          this.convertTemplateGroupValueToList(data, sub)
+        }
+      }
     }
   }
 }
