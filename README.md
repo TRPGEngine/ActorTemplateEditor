@@ -1,6 +1,6 @@
 # trpg-actor-template-editor
 
-> A Vue.js project
+> 进阶TRPG 人物模板编辑器
 
 ## Build Setup
 
@@ -17,5 +17,3 @@ npm run build
 # build for production and view the bundle analyzer report
 npm run build --report
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
