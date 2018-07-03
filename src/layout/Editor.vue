@@ -140,8 +140,8 @@
     </el-col>
 
     <!-- 对话框 -->
-    <el-dialog title="导出模板" :visible.sync="dialogShow">
-      <el-form :model="templateInfo" label-width="100px" ref="dialogForm" :rules="dialogRules">
+    <el-dialog title="导出模板" :visible.sync="dialogExportShow">
+      <el-form :model="templateInfo" label-width="100px" ref="dialogForm" :rules="dialogExportRules">
         <el-form-item label="模板名称:" prop="name">
           <el-input v-model="templateInfo.name"></el-input>
         </el-form-item>
@@ -176,8 +176,8 @@ import at from 'trpg-actor-template'
 export default {
   data () {
     return {
-      dialogShow: false,
-      dialogRules: {
+      dialogExportShow: false,
+      dialogExportRules: {
         name: [
           { required: true, message: '请输入模板名', trigger: 'blur' }
         ],
@@ -271,7 +271,7 @@ export default {
       return dropNode.data.isGroup || type !== 'inner' // 仅能拖拽到组里
     },
     showExportDialog () {
-      this.dialogShow = true
+      this.dialogExportShow = true
     },
     generateTemplateStr () {
       this.$refs.dialogForm.validate(valid => {
