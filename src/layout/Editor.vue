@@ -5,7 +5,15 @@
       <div class="editor-tree-action">
         <el-button type="primary" @click="addNode">增加属性</el-button>
         <el-button type="primary" @click="addGroup">增加组</el-button>
-        <el-button type="primary" @click="execTest">运算测试</el-button>
+        <el-dropdown @command="handleTestCommand">
+          <el-button type="primary">
+            模板测试<i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item :command="execDice">投骰生成</el-dropdown-item>
+            <el-dropdown-item :command="execTest">运算测试</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
         <el-button type="primary" @click="showExportDialog">导出模板</el-button>
       </div>
       <el-tree
@@ -20,11 +28,24 @@
           <span>
             <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
             <i class="iconfont" v-else>&#xe6e9;</i>
-            <span>{{data.info.name}}</span>
+            <span
+              :style="{
+                fontWeight: editingNodeData && data.id === editingNodeData.id ? 'bold' : 'normal',
+                color: data.info.value === '数据错误' ? 'red' : 'black'
+              }"
+              :title="data.info.desc">
+              <template v-if="data.isGroup">
+                {{data.info.name}}
+              </template>
+              <template v-else>
+                {{data.info.name}} - {{data.info.func}} - {{data.info.default}}
+              </template>
+            </span>
           </span>
           <el-popover
             placement="right"
             width="200"
+            class="template-node-btn"
             v-model="templateNodePopover[data.id]">
             <p v-if="data.isGroup">确定移除组[{{data.info.name}}]么?该组下面所有属性都会被删除</p>
             <p v-else>确定移除属性[{{data.info.name}}]么?</p>
@@ -90,10 +111,26 @@
             </el-select>
           </el-form-item>
           <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值:' : '表达式:'">
-            <el-input v-model="editingNodeData.info.default"></el-input>
+            <el-input :type="editingNodeData.info.type" v-model="editingNodeData.info.default"></el-input>
           </el-form-item>
           <el-form-item label="测试值:">
-            <el-input v-model="editingNodeData.info.value" :disabled="editingNodeData.info.func==='expression'"></el-input>
+            <template v-if="editingNodeData.info.func !== 'enum'">
+              <el-input
+                :type="editingNodeData.info.type"
+                v-model="editingNodeData.info.value"
+                :disabled="['expression', 'dice'].indexOf(editingNodeData.info.func) >= 0"
+              ></el-input>
+            </template>
+            <template v-else>
+              <el-select v-model="editingNodeData.info.value" placeholder="请选择">
+                <el-option
+                  v-for="item in (editingNodeData.info.default.split(',') || [])"
+                  :key="item"
+                  :label="item"
+                  :value="item">
+                </el-option>
+              </el-select>
+            </template>
           </el-form-item>
         </template>
       </el-form>
@@ -160,6 +197,10 @@ export default {
         {
           label: '多选项',
           value: 'enum'
+        },
+        {
+          label: '投骰生成',
+          value: 'dice'
         }
       ],
       typeOptions: [
@@ -169,7 +210,7 @@ export default {
         },
         {
           label: '多行文本',
-          value: 'mtext'
+          value: 'textarea'
         },
         {
           label: '数字',
@@ -292,6 +333,11 @@ export default {
 
       return group
     },
+    handleTestCommand (func) {
+      if (typeof func === 'function') {
+        func()
+      }
+    },
     execTest () {
       const template = this.getTemplate()
       template.eval()
@@ -303,8 +349,32 @@ export default {
           this.convertTemplateGroupValueToList(data, item)
         }
       }
-      //
+
       this.$forceUpdate()
+      console.log('运算测试完毕')
+      this.$message({
+        message: '运算测试完毕',
+        type: 'success'
+      })
+    },
+    execDice () {
+      const template = this.getTemplate()
+      template.generateRollResult()
+      const data = template.getData()
+      for (const item of this.list) {
+        if (!item.isGroup) {
+          item.info.value = data[item.info.name]
+        } else {
+          this.convertTemplateGroupValueToList(data, item)
+        }
+      }
+
+      this.$forceUpdate()
+      console.log('投骰生成完毕')
+      this.$message({
+        message: '投骰生成完毕',
+        type: 'success'
+      })
     },
     convertTemplateGroupValueToList (data, item) {
       for (const sub of item.children) {
@@ -337,6 +407,11 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    .template-node-btn {
+      position: absolute;
+      right: 0;
+    }
 
     .template-node-action {
       display: none;
