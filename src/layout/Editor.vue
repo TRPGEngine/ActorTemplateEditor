@@ -59,7 +59,7 @@
     </el-col>
     <!-- 右面板 -->
     <el-col :span="12">
-      <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData">
+      <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData" class="edit-node-panel">
         <template v-if="editingNodeData.isGroup">
           <!-- 组 -->
           <el-form-item label="组名称:">
@@ -131,6 +131,18 @@
                 </el-option>
               </el-select>
             </template>
+          </el-form-item>
+          <el-form-item label="额外参数:">
+            <el-checkbox v-model="editingNodeData.info.showExt">显示额外参数</el-checkbox>
+          </el-form-item>
+          <el-form-item v-if="editingNodeData.info.showExt">
+            <!-- 额外参数 -->
+            <p>额外变量 <el-button type="text" @click="addEditingNodeDataParameter">新增</el-button></p>
+            <div v-for="(item, index) in editingNodeData.info.ext.parameter" :key="index + editingNodeData.info.name" class="ext-parameter">
+              <el-input v-model="editingNodeData.info.ext.parameter[index]['name']" placeholder="变量名"></el-input>
+              :
+              <el-input v-model="editingNodeData.info.ext.parameter[index]['value']" placeholder="测试值"></el-input>
+            </div>
           </el-form-item>
         </template>
       </el-form>
@@ -269,6 +281,16 @@ export default {
     },
     allowDrop (draggingNode, dropNode, type) {
       return dropNode.data.isGroup || type !== 'inner' // 仅能拖拽到组里
+    },
+    addEditingNodeDataParameter () {
+      if (!this.editingNodeData.info.ext.parameter) {
+        this.$set(this.editingNodeData.info.ext, 'parameter', [])
+      }
+
+      this.editingNodeData.info.ext.parameter.push({
+        name: '',
+        value: ''
+      })
     },
     showExportDialog () {
       this.dialogExportShow = true
@@ -425,6 +447,16 @@ export default {
   .el-tree-node.is-drop-inner>.el-tree-node__content .template-node {
     background-color: #409eff;
     color: white;
+  }
+
+  .edit-node-panel {
+    .ext-parameter {
+      margin-bottom: 10px;
+
+      .el-input {
+        width: 180px;
+      }
+    }
   }
 }
 
