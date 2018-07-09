@@ -1,7 +1,7 @@
 <template>
   <el-row :gutter="20" class="editor-main">
     <!-- 左面板 -->
-    <el-col :span="12">
+    <el-col :span="24">
       <div class="editor-tree-action">
         <el-button type="primary" @click="addNode">增加属性</el-button>
         <el-button type="primary" @click="addGroup">增加组</el-button>
@@ -15,7 +15,10 @@
           </el-dropdown-menu>
         </el-dropdown>
         <el-button type="primary" @click="showExportDialog">导出模板</el-button>
+        <el-button type="primary" @click="copyCell">复制元素</el-button>
       </div>
+    </el-col>
+    <el-col :span="12">
       <el-tree
         :data="list"
         node-key="id"
@@ -416,6 +419,30 @@ export default {
           this.convertTemplateGroupValueToList(data, sub)
         }
       }
+    },
+    copyCell () {
+      if (!this.editingNodeData) {
+        this.$message({
+          message: '没有选中任何元素',
+          type: 'warning'
+        })
+        return
+      }
+
+      if (this.editingNodeData.isGroup) {
+        this.$message({
+          message: '不能复制组',
+          type: 'warning'
+        })
+        return
+      }
+
+      this.list.push({
+        id: this.autoIncrement,
+        isGroup: false,
+        info: JSON.parse(JSON.stringify(this.editingNodeData.info))
+      })
+      this.autoIncrement++
     }
   }
 }
@@ -425,11 +452,15 @@ export default {
 .editor-main {
   .editor-tree-action {
     margin-bottom: 20px;
+
+    .el-button+.el-button {
+      margin-left: 0;
+    }
   }
 
   .tip {
     text-align: center;
-    margin-top: 120px;
+    margin-top: 80px;
     color: #999999;
   }
 
