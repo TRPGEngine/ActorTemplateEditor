@@ -86,9 +86,26 @@ export default {
 }
 </script>
 
-<style>
-.el-header {
-  box-shadow: 0px 1px 5px #dddddd;
-  padding: 10px 20px;
+<style lang="scss">
+html, body, #app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+}
+
+.el-container.is-vertical {
+  .el-header {
+    box-shadow: 0px 1px 5px #dddddd;
+    padding: 10px 20px;
+  }
+
+  .el-main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 }
 </style>

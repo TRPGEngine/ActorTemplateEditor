@@ -1,159 +1,160 @@
 <template>
   <el-row :gutter="20" class="editor-main">
-    <!-- 左面板 -->
-    <el-col :span="24">
-      <div class="editor-tree-action">
-        <el-button type="primary" @click="addNode">增加属性</el-button>
-        <el-button type="primary" @click="addGroup">增加组</el-button>
-        <el-dropdown @command="handleTestCommand">
-          <el-button type="primary">
-            模板测试<i class="el-icon-arrow-down el-icon--right"></i>
-          </el-button>
-          <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item :command="execDice">投骰生成</el-dropdown-item>
-            <el-dropdown-item :command="execTest">运算测试</el-dropdown-item>
-          </el-dropdown-menu>
-        </el-dropdown>
-        <el-button type="primary" @click="showExportDialog">导出模板</el-button>
-        <el-button type="primary" @click="copyCell">复制元素</el-button>
-      </div>
-    </el-col>
-    <el-col :span="12">
-      <el-tree
-        :data="list"
-        node-key="id"
-        default-expand-all
-        :expand-on-click-node="false"
-        @node-click="handleNodeClick"
-        draggable
-        :allow-drop="allowDrop">
-        <span class="template-node" slot-scope="{ node, data }">
-          <span>
-            <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
-            <i class="iconfont" v-else>&#xe6e9;</i>
-            <span
-              :style="{
-                fontWeight: editingNodeData && data.id === editingNodeData.id ? 'bold' : 'normal',
-                color: data.info.value === '数据错误' ? 'red' : 'black'
-              }"
-              :title="data.info.desc">
-              <template v-if="data.isGroup">
-                {{data.info.name}}
-              </template>
-              <template v-else>
-                {{data.info.name}} - {{data.info.func}} - {{data.info.default}}
-              </template>
-            </span>
-          </span>
-          <el-popover
-            placement="right"
-            width="200"
-            class="template-node-btn"
-            v-model="templateNodePopover[data.id]">
-            <p v-if="data.isGroup">确定移除组[{{data.info.name}}]么?该组下面所有属性都会被删除</p>
-            <p v-else>确定移除属性[{{data.info.name}}]么?</p>
-            <div style="text-align: right; margin: 0">
-              <el-button type="primary" size="mini" @click="(e) => removeNode(node, data)">确定</el-button>
-            </div>
-            <el-button slot="reference" class="template-node-action" size="mini" type="text" @click="(e) => handleShowRemoveNodeConfirm(e, data.id)">删除</el-button>
-          </el-popover>
-        </span>
-      </el-tree>
-    </el-col>
+    <el-row class="editor-action">
+      <el-button type="primary" @click="addNode">增加属性</el-button>
+      <el-button type="primary" @click="addGroup">增加组</el-button>
+      <el-dropdown @command="handleTestCommand">
+        <el-button type="primary">
+          模板测试<i class="el-icon-arrow-down el-icon--right"></i>
+        </el-button>
+        <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item :command="execDice">投骰生成</el-dropdown-item>
+          <el-dropdown-item :command="execTest">运算测试</el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
+      <el-button type="primary" @click="showExportDialog">导出模板</el-button>
+      <el-button type="primary" @click="copyCell">复制元素</el-button>
+    </el-row>
 
-    <!-- 右面板 -->
-    <el-col :span="12">
-      <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData" class="edit-node-panel">
-        <template v-if="editingNodeData.isGroup">
-          <!-- 组 -->
-          <el-form-item label="组名称:">
-            <el-input v-model="editingNodeData.info.name"></el-input>
-          </el-form-item>
-          <el-form-item label="组描述:">
-            <el-input
-              type="textarea"
-              :autosize="{ minRows: 4, maxRows: 6}"
-              placeholder="请输入组描述信息"
-              v-model="editingNodeData.info.desc">
-            </el-input>
-          </el-form-item>
-        </template>
-        <template v-else>
-          <!-- 属性 -->
-          <el-form-item label="可见性:">
-            <el-checkbox v-model="editingNodeData.info.visibility">所有人可见</el-checkbox>
-          </el-form-item>
-          <el-form-item label="属性名称:">
-            <el-input v-model="editingNodeData.info.name"></el-input>
-          </el-form-item>
-          <el-form-item label="属性描述:">
-            <el-input
-              type="textarea"
-              :autosize="{ minRows: 4, maxRows: 6}"
-              placeholder="请输入属性描述信息"
-              v-model="editingNodeData.info.desc">
-            </el-input>
-          </el-form-item>
-          <el-form-item label="方法:">
-            <el-select v-model="editingNodeData.info.func" placeholder="请选择方法">
-              <el-option
-                v-for="item in funcOptions"
-                :key="item.value"
-                :label="`${item.label}(${item.value})`"
-                :value="item.value">
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="类型:">
-            <el-select v-model="editingNodeData.info.type" placeholder="请选择类型">
-              <el-option
-                v-for="item in typeOptions"
-                :key="item.value"
-                :label="`${item.label}(${item.value})`"
-                :value="item.value">
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值:' : '表达式:'">
-            <el-input :type="editingNodeData.info.type" v-model="editingNodeData.info.default"></el-input>
-          </el-form-item>
-          <el-form-item label="测试值:">
-            <template v-if="editingNodeData.info.func !== 'enum'">
+    <el-row class="editor-panel">
+      <!-- 左面板 -->
+      <div class="edit-tree-panel">
+        <el-tree
+          :data="list"
+          node-key="id"
+          default-expand-all
+          :expand-on-click-node="false"
+          @node-click="handleNodeClick"
+          draggable
+          :allow-drop="allowDrop">
+          <span class="template-node" slot-scope="{ node, data }">
+            <span>
+              <i class="iconfont" v-if="data.isGroup">&#xe62f;</i>
+              <i class="iconfont" v-else>&#xe6e9;</i>
+              <span
+                :style="{
+                  fontWeight: editingNodeData && data.id === editingNodeData.id ? 'bold' : 'normal',
+                  color: data.info.value === '数据错误' ? 'red' : 'black'
+                }"
+                :title="data.info.desc">
+                <template v-if="data.isGroup">
+                  {{data.info.name}}
+                </template>
+                <template v-else>
+                  {{data.info.name}} - {{data.info.func}} - {{data.info.default}}
+                </template>
+              </span>
+            </span>
+            <el-popover
+              placement="right"
+              width="200"
+              class="template-node-btn"
+              v-model="templateNodePopover[data.id]">
+              <p v-if="data.isGroup">确定移除组[{{data.info.name}}]么?该组下面所有属性都会被删除</p>
+              <p v-else>确定移除属性[{{data.info.name}}]么?</p>
+              <div style="text-align: right; margin: 0">
+                <el-button type="primary" size="mini" @click="(e) => removeNode(node, data)">确定</el-button>
+              </div>
+              <el-button slot="reference" class="template-node-action" size="mini" type="text" @click="(e) => handleShowRemoveNodeConfirm(e, data.id)">删除</el-button>
+            </el-popover>
+          </span>
+        </el-tree>
+      </div>
+
+      <!-- 右面板 -->
+      <div class="edit-node-panel">
+        <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData">
+          <template v-if="editingNodeData.isGroup">
+            <!-- 组 -->
+            <el-form-item label="组名称:">
+              <el-input v-model="editingNodeData.info.name"></el-input>
+            </el-form-item>
+            <el-form-item label="组描述:">
               <el-input
-                :type="editingNodeData.info.type"
-                v-model="editingNodeData.info.value"
-                :disabled="['expression', 'dice'].indexOf(editingNodeData.info.func) >= 0"
-              ></el-input>
-            </template>
-            <template v-else>
-              <el-select v-model="editingNodeData.info.value" placeholder="请选择">
+                type="textarea"
+                :autosize="{ minRows: 4, maxRows: 6}"
+                placeholder="请输入组描述信息"
+                v-model="editingNodeData.info.desc">
+              </el-input>
+            </el-form-item>
+          </template>
+          <template v-else>
+            <!-- 属性 -->
+            <el-form-item label="可见性:">
+              <el-checkbox v-model="editingNodeData.info.visibility">所有人可见</el-checkbox>
+            </el-form-item>
+            <el-form-item label="属性名称:">
+              <el-input v-model="editingNodeData.info.name"></el-input>
+            </el-form-item>
+            <el-form-item label="属性描述:">
+              <el-input
+                type="textarea"
+                :autosize="{ minRows: 4, maxRows: 6}"
+                placeholder="请输入属性描述信息"
+                v-model="editingNodeData.info.desc">
+              </el-input>
+            </el-form-item>
+            <el-form-item label="方法:">
+              <el-select v-model="editingNodeData.info.func" placeholder="请选择方法">
                 <el-option
-                  v-for="item in (editingNodeData.info.default.split(',') || [])"
-                  :key="item"
-                  :label="item"
-                  :value="item">
+                  v-for="item in funcOptions"
+                  :key="item.value"
+                  :label="`${item.label}(${item.value})`"
+                  :value="item.value">
                 </el-option>
               </el-select>
-            </template>
-          </el-form-item>
-          <el-form-item label="额外参数:">
-            <el-checkbox v-model="editingNodeData.info.showExt">显示额外参数</el-checkbox>
-          </el-form-item>
-          <el-form-item v-if="editingNodeData.info.showExt">
-            <!-- 额外参数 -->
-            <p>额外变量 <el-button type="text" @click="addEditingNodeDataParameter">新增</el-button></p>
-            <div v-for="(item, index) in editingNodeData.info.ext.parameter" :key="index + editingNodeData.info.name" class="ext-parameter">
-              <el-input v-model="editingNodeData.info.ext.parameter[index]['name']" placeholder="变量名"></el-input>
-              :
-              <el-input v-model="editingNodeData.info.ext.parameter[index]['value']" placeholder="测试值"></el-input>
-            </div>
-          </el-form-item>
-        </template>
-      </el-form>
-      <div class="tip" v-else>
-        请选择您要修改的节点
+            </el-form-item>
+            <el-form-item label="类型:">
+              <el-select v-model="editingNodeData.info.type" placeholder="请选择类型">
+                <el-option
+                  v-for="item in typeOptions"
+                  :key="item.value"
+                  :label="`${item.label}(${item.value})`"
+                  :value="item.value">
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item :label="editingNodeData.info.func === 'value' ? '默认值:' : '表达式:'">
+              <el-input :type="editingNodeData.info.type" v-model="editingNodeData.info.default"></el-input>
+            </el-form-item>
+            <el-form-item label="测试值:">
+              <template v-if="editingNodeData.info.func !== 'enum'">
+                <el-input
+                  :type="editingNodeData.info.type"
+                  v-model="editingNodeData.info.value"
+                  :disabled="['expression', 'dice'].indexOf(editingNodeData.info.func) >= 0"
+                ></el-input>
+              </template>
+              <template v-else>
+                <el-select v-model="editingNodeData.info.value" placeholder="请选择">
+                  <el-option
+                    v-for="item in (editingNodeData.info.default.split(',') || [])"
+                    :key="item"
+                    :label="item"
+                    :value="item">
+                  </el-option>
+                </el-select>
+              </template>
+            </el-form-item>
+            <el-form-item label="额外参数:">
+              <el-checkbox v-model="editingNodeData.info.showExt">显示额外参数</el-checkbox>
+            </el-form-item>
+            <el-form-item v-if="editingNodeData.info.showExt">
+              <!-- 额外参数 -->
+              <p>额外变量 <el-button type="text" @click="addEditingNodeDataParameter">新增</el-button></p>
+              <div v-for="(item, index) in editingNodeData.info.ext.parameter" :key="index + editingNodeData.info.name" class="ext-parameter">
+                <el-input v-model="editingNodeData.info.ext.parameter[index]['name']" placeholder="变量名"></el-input>
+                :
+                <el-input v-model="editingNodeData.info.ext.parameter[index]['value']" placeholder="测试值"></el-input>
+              </div>
+            </el-form-item>
+          </template>
+        </el-form>
+        <div class="tip" v-else>
+          请选择您要修改的节点
+        </div>
       </div>
-    </el-col>
+    </el-row>
 
     <!-- 对话框 -->
     <el-dialog title="导出模板" :visible.sync="dialogExportShow">
@@ -450,7 +451,11 @@ export default {
 
 <style lang="scss">
 .editor-main {
-  .editor-tree-action {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  .editor-action {
     margin-bottom: 20px;
 
     .el-button+.el-button {
@@ -458,49 +463,60 @@ export default {
     }
   }
 
-  .tip {
-    text-align: center;
-    margin-top: 80px;
-    color: #999999;
-  }
-
-  .template-node {
-    padding: 0 4px;
+  .editor-panel {
     flex: 1;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    .edit-tree-panel {
+      overflow: auto;
+      flex: 1;
+      max-height: 100%;
 
-    .template-node-btn {
-      position: absolute;
-      right: 0;
-    }
+      .template-node {
+        padding: 0 4px;
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-    .template-node-action {
-      display: none;
-    }
+        .template-node-btn {
+          position: absolute;
+          right: 0;
+        }
 
-    &:hover .template-node-action {
-      display: inline;
-    }
-  }
+        .template-node-action {
+          display: none;
+        }
 
-  .el-tree-node.is-drop-inner>.el-tree-node__content .template-node {
-    background-color: #409eff;
-    color: white;
-  }
-
-  .edit-node-panel {
-    p {
-      margin: 0;
-    }
-
-    .ext-parameter {
-      margin-bottom: 10px;
-
-      .el-input {
-        width: 180px;
+        &:hover .template-node-action {
+          display: inline;
+        }
       }
+
+      .el-tree-node.is-drop-inner>.el-tree-node__content .template-node {
+        background-color: #409eff;
+        color: white;
+      }
+    }
+
+    .edit-node-panel {
+      flex: 1;
+      p {
+        margin: 0;
+      }
+
+      .ext-parameter {
+        margin-bottom: 10px;
+
+        .el-input {
+          width: 180px;
+        }
+      }
+    }
+
+    .tip {
+      text-align: center;
+      margin-top: 80px;
+      color: #999999;
     }
   }
 }
