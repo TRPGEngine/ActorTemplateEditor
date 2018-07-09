@@ -57,6 +57,7 @@
         </span>
       </el-tree>
     </el-col>
+
     <!-- 右面板 -->
     <el-col :span="12">
       <el-form :model="editingNodeData" label-width="80px" v-if="editingNodeData" class="edit-node-panel">
@@ -335,7 +336,16 @@ export default {
       cell.func = cellItem.func
       cell.type = cellItem.type
       cell.value = cellItem.value
-      cell.ext = cellItem.ext
+
+      cell.ext = {}
+      // 解析parameter
+      if (cellItem.ext.parameter) {
+        let parameter = {}
+        cellItem.ext.parameter.map(p => {
+          parameter[p.name] = p.value || 0
+        })
+        cell.ext.parameter = parameter
+      }
 
       return cell
     },
@@ -450,6 +460,10 @@ export default {
   }
 
   .edit-node-panel {
+    p {
+      margin: 0;
+    }
+
     .ext-parameter {
       margin-bottom: 10px;
 
