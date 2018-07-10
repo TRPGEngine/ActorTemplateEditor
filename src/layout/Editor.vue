@@ -13,7 +13,7 @@
         </el-dropdown-menu>
       </el-dropdown>
       <el-button type="primary" @click="showExportDialog">导出模板</el-button>
-      <el-button type="primary" @click="copyCell">复制元素</el-button>
+      <el-button type="primary" @click="copyCell">复制节点</el-button>
     </el-row>
 
     <el-row class="editor-panel">
@@ -438,12 +438,15 @@ export default {
         return
       }
 
-      this.list.push({
+      let length = this.list.push({
         id: this.autoIncrement,
         isGroup: false,
         info: JSON.parse(JSON.stringify(this.editingNodeData.info))
       })
       this.autoIncrement++
+      this.$nextTick(() => {
+        this.editingNodeData = this.list[length - 1]
+      })
     }
   }
 }
