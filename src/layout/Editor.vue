@@ -146,6 +146,7 @@
                 <el-input v-model="editingNodeData.info.ext.parameter[index]['name']" placeholder="变量名"></el-input>
                 :
                 <el-input v-model="editingNodeData.info.ext.parameter[index]['value']" placeholder="测试值"></el-input>
+                <el-button icon="el-icon-delete" circle @click="removeNodeParamter(index)"></el-button>
               </div>
             </el-form-item>
           </template>
@@ -274,6 +275,9 @@ export default {
         children: []
       })
       this.autoIncrement++
+    },
+    removeNodeParamter (index) {
+      this.editingNodeData.info.ext.parameter.splice(index, 1)
     },
     handleShowRemoveNodeConfirm (e, id) {
       e.stopPropagation()
@@ -503,6 +507,7 @@ export default {
 
     .edit-node-panel {
       flex: 1;
+      overflow: auto;
       p {
         margin: 0;
       }
